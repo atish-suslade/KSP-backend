@@ -39,44 +39,44 @@ let scheduledTasks = {};
 app.use(express.json());
 console.log(getCurrentISTDateTimeISO())
 // Load all active tasks from the database and schedule them on startup
-// async function loadTasks() {
-//   const query = 'SELECT * FROM dutyscheduler';
+async function loadTasks() {
+  const query = 'SELECT * FROM dutyscheduler';
 
-//   try {
-//     const result = await pool.query(query);
-//     const tasks = result.rows;
-//     tasks.forEach((task) => {
-//       scheduleTask(task);
-//     });
-//   } catch (err) {
-//     console.error(err);
-//   }
-// };
+  try {
+    const result = await pool.query(query);
+    const tasks = result.rows;
+    tasks.forEach((task) => {
+      scheduleTask(task);
+    });
+  } catch (err) {
+    console.error(err);
+  }
+};
 
 
 // Function to schedule a task
-// const scheduleTask = async (task) => {
-// //   if (task.is_active) {
-//     const taskId = cron.schedule(task.cron_time, async() => {
-//       console.log(`Task ${task.title} is running`);
-//       const isoDate = getCurrentISTDateTimeISO();
-//       const query = `INSERT INTO duties (title, description,userid) VALUES ($1, $2, $3) RETURNING *`;
-// //       const query = `UPDATE tasks SET "updatedAt" = $1, deadline= DATE_TRUNC('day', CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata') + INTERVAL '1 day' - INTERVAL '1 second'
-// //  WHERE id = $2 RETURNING *`;
-//       const values = [task.title, task.description, task.userid];
-//       try {
-//         const result = await pool.query(query, values);
-//         const task = result.rows[0];
-//         console.log(task)
-//       } catch (err) {
-//         console.error(err);
-//       }
-//     });
+const scheduleTask = async (task) => {
+//   if (task.is_active) {
+    const taskId = cron.schedule(task.cron_time, async() => {
+      console.log(`Task ${task.title} is running`);
+      const isoDate = getCurrentISTDateTimeISO();
+      const query = `INSERT INTO duties (title, description,userid) VALUES ($1, $2, $3) RETURNING *`;
+//       const query = `UPDATE tasks SET "updatedAt" = $1, deadline= DATE_TRUNC('day', CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata') + INTERVAL '1 day' - INTERVAL '1 second'
+//  WHERE id = $2 RETURNING *`;
+      const values = [task.title, task.description, task.userid];
+      try {
+        const result = await pool.query(query, values);
+        const task = result.rows[0];
+        console.log(task)
+      } catch (err) {
+        console.error(err);
+      }
+    });
 
-//     scheduledTasks[task.id] = taskId;
-//     console.log(`Task ${task.title} scheduled with cronTime ${task.cron_time}`);
-// //   }
-// };
+    scheduledTasks[task.id] = taskId;
+    console.log(`Task ${task.title} scheduled with cronTime ${task.cron_time}`);
+//   }
+};
 app.get('/api/gettime', async(req,res)=>{
     const query = `SELECT * FROM duties`;
     try {
@@ -100,22 +100,22 @@ app.get('/api/gettask', async(req,res)=>{
     }
 })
 
-// app.post('/api/schedule-task', async (req, res) => {
-//     const { title, description,userid,cron_time, police_station } = req.body;
-//     // const task_id = uuidv4();
-//     const query = `INSERT INTO dutyscheduler (title, description,userid, cron_time,police_station) VALUES ($1, $2, $3, $4, $5) RETURNING *`;
-//     const values = [title, description,userid,cron_time,police_station];
+app.post('/api/schedule-task', async (req, res) => {
+    const { title, description,userid,cron_time, police_station } = req.body;
+    // const task_id = uuidv4();
+    const query = `INSERT INTO dutyscheduler (title, description,userid, cron_time,police_station) VALUES ($1, $2, $3, $4, $5) RETURNING *`;
+    const values = [title, description,userid,cron_time,police_station];
   
-//     try {
-//       const result = await pool.query(query, values);
-//       const task = result.rows[0];
-//       await scheduleTask(task);
-//       res.send(task);
-//     } catch (err) {
-//       console.error(err);
-//       res.status(500).send('Error scheduling task');
-//     }
-//   });
+    try {
+      const result = await pool.query(query, values);
+      const task = result.rows[0];
+      await scheduleTask(task);
+      res.send(task);
+    } catch (err) {
+      console.error(err);
+      res.status(500).send('Error scheduling task');
+    }
+  });
 
 app.post('/api/getOnboardOfficers', async (req, res) => {
     const { duty,cron_time } = req.body;
@@ -765,56 +765,58 @@ app.post('/api/getresponsetime',authorize, async (req, res) => {
         res.status(500).send({ error: 'Error finding officer data' });
     }
 });
-// const cronJobexecute = async () => {
-//   console.log('Cron job running...'); // Log cron job execution
-//   // const currentISTDate = getISTDate();
-//   const currentISTDate = (new Date());
-//   console.log('Current IST Date:',currentISTDate ); // Log current IST date
-//   try {
-//       const res = await pool.query('SELECT * FROM duties WHERE completed = false AND notified = false AND deadline < $1', [currentISTDate]);
-//       const tasks = res.rows;
-//       console.log('Tasks:', tasks);
-//       for (const task of tasks) {
-//           const title= `Pending Task`;
-//           const message = `Task ${task.title} is overdue`;
-//           const Notification = await pool.query('INSERT INTO notifications (user_id, title, message) VALUES ($1, $2, $3) RETURNING * ', [task.userid,title, message]);
-//           const user = Notification.rows[0];
-//           console.log(Notification.rows[0])
-//           await pool.query('UPDATE duties SET notified = true WHERE id = $1', [task.id]);
+const cronJobexecute = async () => {
+  console.log('Cron job running...'); // Log cron job execution
+  // const currentISTDate = getISTDate();
+  const currentISTDate = (new Date());
+  console.log('Current IST Date:',currentISTDate ); // Log current IST date
+  try {
+      const res = await pool.query('SELECT * FROM duties WHERE completed = false AND notified = false AND deadline < $1', [currentISTDate]);
+      const tasks = res.rows;
+      console.log('Tasks:', tasks);
+      for (const task of tasks) {
+          const title= `Pending Task`;
+          const message = `Task ${task.title} is overdue`;
+          const Notification = await pool.query('INSERT INTO notifications (user_id, title, message) VALUES ($1, $2, $3) RETURNING * ', [task.userid,title, message]);
+          const user = Notification.rows[0];
+          console.log(Notification.rows[0])
+          await pool.query('UPDATE duties SET notified = true WHERE id = $1', [task.id]);
 
-//           // if (user) {
-//           //     const transporter = nodemailer.createTransport({
-//           //         service: 'Gmail',
-//           //         auth: {
-//           //             user: 'atishsuslade@gmail.com',
-//           //             pass: 'iawl ulog vmqg uuok',
-//           //         },
-//           //     });
+          // if (user) {
+          //     const transporter = nodemailer.createTransport({
+          //         service: 'Gmail',
+          //         auth: {
+          //             user: 'atishsuslade@gmail.com',
+          //             pass: 'iawl ulog vmqg uuok',
+          //         },
+          //     });
 
-//           //     const mailOptions = {
-//           //         from: 'atishsuslade@gmail.com',
-//           //         to: user.email,
-//           //         subject: 'Task Deadline Notification',
-//           //         text: `The task "${task.title}" is overdue. Please complete it as soon as possible.`,
-//           //     };
+          //     const mailOptions = {
+          //         from: 'atishsuslade@gmail.com',
+          //         to: user.email,
+          //         subject: 'Task Deadline Notification',
+          //         text: `The task "${task.title}" is overdue. Please complete it as soon as possible.`,
+          //     };
 
-//           //     transporter.sendMail(mailOptions, async (error, info) => {
-//           //         if (error) {
-//           //             console.error('Error sending email:', error);
-//           //         } else {
-//           //             console.log('Email sent:', info.response);
+          //     transporter.sendMail(mailOptions, async (error, info) => {
+          //         if (error) {
+          //             console.error('Error sending email:', error);
+          //         } else {
+          //             console.log('Email sent:', info.response);
 
-//           //             // Update task as notified
-//           //             await client.query('UPDATE tasks SET notified = true WHERE id = $1', [task.id]);
-//           //         }
-//           //     });
-//           // }
-//       }
-//   } catch (error) {
-//       console.error('Error executing query:', error);
-//   }
-// }
+          //             // Update task as notified
+          //             await client.query('UPDATE tasks SET notified = true WHERE id = $1', [task.id]);
+          //         }
+          //     });
+          // }
+      }
+  } catch (error) {
+      console.error('Error executing query:', error);
+  }
+}
 
 // cron.schedule('* * * * *',cronJobexecute);
-// cronJobexecute()
+setTimeout(() => {
+  cronJobexecute();
+}, 2000);
 module.exports = app
