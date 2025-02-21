@@ -16,7 +16,7 @@ app.use(cors());
 
 //run the server
 app.listen(5000,'0.0.0.0',() => {
-  // loadTasks();
+  loadTasks();
   console.log('server started on port 5000');
 });
 //ceating database
